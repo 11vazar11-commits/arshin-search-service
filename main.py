@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import http.client
 import json
-import urllib.error
+import socket
+import ssl
 import urllib.parse
-import urllib.request
 from pathlib import Path
 from typing import Any
 
 from flask import Flask, jsonify, request, send_from_directory
 
 APP_DIR = Path(__file__).resolve().parent
-ARSHIN_API = "https://fgis.gost.ru/fundmetrology/eapi"
+ARSHIN_HOST = "fgis.gost.ru"
+ARSHIN_BASE_PATH = "/fundmetrology/eapi"
+UPSTREAM_TIMEOUT = 20
 
 app = Flask(__name__, static_folder=None)
 
@@ -19,25 +22,92 @@ def normalized(value: Any) -> str:
     return str(value or "").strip().casefold()
 
 
+class ArshinHTTPError(Exception):
+    def __init__(self, status: int, body: str):
+        super().__init__(f"HTTP {status}")
+        self.status = status
+        self.body = body
+
+
+class IPv4HTTPSConnection(http.client.HTTPSConnection):
+    """HTTPS-соединение с принудительным использованием конкретного IPv4."""
+
+    def __init__(self, host: str, fixed_ip: str, **kwargs: Any):
+        self.fixed_ip = fixed_ip
+        super().__init__(host, **kwargs)
+
+    def connect(self) -> None:
+        self.sock = socket.create_connection(
+            (self.fixed_ip, self.port),
+            timeout=self.timeout,
+            source_address=self.source_address,
+        )
+        self.sock = self._context.wrap_socket(
+            self.sock,
+            server_hostname=self.host,
+        )
+
+
 def arshin_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     query = urllib.parse.urlencode(params or {}, doseq=True)
-    url = f"{ARSHIN_API}{path}"
+    request_path = f"{ARSHIN_BASE_PATH}{path}"
     if query:
-        url = f"{url}?{query}"
+        request_path = f"{request_path}?{query}"
 
-    upstream_request = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 ArshinSearchService/1.0",
-        },
-        method="GET",
+    # Некоторые облачные сети сначала пытаются подключиться по IPv6 и зависают.
+    # Получаем только IPv4-адреса и пробуем их по очереди.
+    address_info = socket.getaddrinfo(
+        ARSHIN_HOST,
+        443,
+        family=socket.AF_INET,
+        type=socket.SOCK_STREAM,
     )
+    ipv4_addresses = list(dict.fromkeys(item[4][0] for item in address_info))
 
-    with urllib.request.urlopen(upstream_request, timeout=55) as response:
-        charset = response.headers.get_content_charset() or "utf-8"
-        raw = response.read().decode(charset, errors="replace")
-        return json.loads(raw)
+    if not ipv4_addresses:
+        raise ConnectionError("Не найден IPv4-адрес ГИС «Аршин».")
+
+    last_error: Exception | None = None
+    ssl_context = ssl.create_default_context()
+
+    for ip_address in ipv4_addresses:
+        connection = IPv4HTTPSConnection(
+            ARSHIN_HOST,
+            fixed_ip=ip_address,
+            port=443,
+            timeout=UPSTREAM_TIMEOUT,
+            context=ssl_context,
+        )
+        try:
+            connection.request(
+                "GET",
+                request_path,
+                headers={
+                    "Accept": "application/json",
+                    "Host": ARSHIN_HOST,
+                    "User-Agent": "Mozilla/5.0 ArshinSearchService/1.0",
+                    "Connection": "close",
+                },
+            )
+            response = connection.getresponse()
+            raw = response.read()
+            charset = response.headers.get_content_charset() or "utf-8"
+            text = raw.decode(charset, errors="replace")
+
+            if response.status != 200:
+                raise ArshinHTTPError(response.status, text[:1000])
+
+            return json.loads(text)
+        except ArshinHTTPError:
+            raise
+        except (OSError, TimeoutError, ssl.SSLError) as exc:
+            last_error = exc
+        finally:
+            connection.close()
+
+    raise ConnectionError(
+        f"Не удалось подключиться к ГИС «Аршин» по IPv4: {last_error}"
+    )
 
 
 @app.after_request
@@ -126,25 +196,24 @@ def search():
             }
         )
 
-    except urllib.error.HTTPError as exc:
-        details = exc.read().decode("utf-8", errors="replace")[:1000]
+    except ArshinHTTPError as exc:
         return (
             jsonify(
                 {
                     "ok": False,
-                    "error": f"ГИС «Аршин» вернул ошибку HTTP {exc.code}.",
-                    "details": details,
+                    "error": f"ГИС «Аршин» вернул ошибку HTTP {exc.status}.",
+                    "details": exc.body,
                 }
             ),
             502,
         )
-    except urllib.error.URLError as exc:
+    except (ConnectionError, OSError, TimeoutError, ssl.SSLError) as exc:
         return (
             jsonify(
                 {
                     "ok": False,
                     "error": "Не удалось подключиться к ГИС «Аршин».",
-                    "details": str(exc.reason),
+                    "details": str(exc),
                 }
             ),
             502,
@@ -184,25 +253,24 @@ def details():
     try:
         payload = arshin_get(f"/vri/{safe_id}")
         return jsonify({"ok": True, "data": payload})
-    except urllib.error.HTTPError as exc:
-        details_text = exc.read().decode("utf-8", errors="replace")[:1000]
+    except ArshinHTTPError as exc:
         return (
             jsonify(
                 {
                     "ok": False,
-                    "error": f"Не удалось загрузить карточку. HTTP {exc.code}.",
-                    "details": details_text,
+                    "error": f"Не удалось загрузить карточку. HTTP {exc.status}.",
+                    "details": exc.body,
                 }
             ),
             502,
         )
-    except urllib.error.URLError as exc:
+    except (ConnectionError, OSError, TimeoutError, ssl.SSLError) as exc:
         return (
             jsonify(
                 {
                     "ok": False,
                     "error": "Не удалось подключиться к ГИС «Аршин».",
-                    "details": str(exc.reason),
+                    "details": str(exc),
                 }
             ),
             502,
