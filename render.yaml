@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: arshin-search-service
+    runtime: python
+    plan: free
+    buildCommand: python -m compileall server.py
+    startCommand: python server.py
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit

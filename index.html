@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Поиск сведений о поверке</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --text: #10233f;
+      --muted: #64748b;
+      --line: #dbe4ee;
+      --primary: #176b87;
+      --primary-dark: #0f536a;
+      --primary-soft: #e8f5f8;
+      --success: #147a4b;
+      --success-soft: #e8f7ef;
+      --danger: #b42318;
+      --danger-soft: #fdecec;
+      --warning: #9a6700;
+      --warning-soft: #fff7df;
+      --shadow: 0 14px 36px rgba(16, 35, 63, .08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    button, input, select { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .page {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    .hero {
+      display: flex;
+      gap: 22px;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.1;
+      letter-spacing: -.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+      font-size: 16px;
+    }
+
+    .demo-badge {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--warning-soft);
+      color: var(--warning);
+      font-weight: 700;
+      border: 1px solid #f2dda1;
+      white-space: nowrap;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid rgba(219, 228, 238, .9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .search-panel {
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+    }
+
+    .years-wrap {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .years {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 2px 2px 8px;
+      scrollbar-width: thin;
+    }
+
+    .year-btn {
+      flex: 0 0 auto;
+      min-width: 68px;
+      height: 42px;
+      border-radius: 11px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--primary-dark);
+      font-weight: 800;
+      transition: .2s ease;
+    }
+
+    .year-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .year-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 8px 20px rgba(23, 107, 135, .2);
+    }
+
+    .search-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 0 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(23, 107, 135, .12);
+    }
+
+    .field input::placeholder { color: #94a3b8; }
+
+    .btn {
+      min-height: 48px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      padding: 0 18px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      transition: .2s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 8px 18px rgba(23, 107, 135, .18);
+    }
+
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-secondary {
+      background: var(--surface-soft);
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    .btn-ghost {
+      background: white;
+      color: var(--primary-dark);
+      border-color: var(--line);
+      min-height: 40px;
+      padding: 0 13px;
+    }
+
+    .btn-small {
+      min-height: 38px;
+      padding: 0 12px;
+      font-size: 14px;
+    }
+
+    .help-row {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .help-row strong { color: var(--text); }
+
+    .state {
+      display: none;
+      margin-bottom: 20px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .state.show { display: block; }
+    .state.error { background: var(--danger-soft); color: var(--danger); border-color: #f5c2bd; }
+    .state.info { background: var(--primary-soft); color: var(--primary-dark); border-color: #c7e4ec; }
+
+    .results-panel { overflow: hidden; }
+
+    .results-head {
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+
+    .results-title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .results-title h2 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .page-size {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .page-size select {
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      padding: 0 10px;
+      color: var(--text);
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1180px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 14px 14px;
+      font-size: 12px;
+      color: var(--primary-dark);
+      background: #f7fafc;
+      border-bottom: 1px solid var(--line);
+      vertical-align: bottom;
+      white-space: normal;
+    }
+
+    tbody td {
+      padding: 16px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    tbody tr:hover { background: #fbfdff; }
+
+    .row-main td:first-child { border-left: 4px solid transparent; }
+
+    .row-main.is-open td:first-child { border-left-color: var(--primary); }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .status.ok {
+      color: var(--success);
+      background: var(--success-soft);
+    }
+
+    .status.bad {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .muted { color: var(--muted); }
+
+    .details-row { display: none; }
+    .details-row.open { display: table-row; }
+
+    .details-cell {
+      padding: 0 !important;
+      background: #f8fbfd;
+    }
+
+    .details-card {
+      padding: 22px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .details-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .details-top h3 {
+      margin: 0 0 5px;
+      font-size: 19px;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .detail-section {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 15px;
+    }
+
+    .detail-section.wide { grid-column: span 2; }
+
+    .detail-section h4 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: var(--primary-dark);
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: minmax(120px, 42%) 1fr;
+      gap: 8px 12px;
+      font-size: 13px;
+    }
+
+    .kv dt { color: var(--muted); }
+    .kv dd {
+      margin: 0;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 48px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 18px;
+      border-top: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+
+    .page-btn {
+      min-width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .page-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .page-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .mobile-results { display: none; }
+
+    .card {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card:last-child { border-bottom: 0; }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .card-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+
+    .card-item strong {
+      display: block;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mobile-detail {
+      display: none;
+      margin-top: 14px;
+    }
+
+    .mobile-detail.open { display: block; }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 1100px) {
+      .search-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        width: min(100% - 20px, 720px);
+        padding-top: 18px;
+      }
+
+      .hero { display: block; }
+      .demo-badge { margin-top: 14px; }
+
+      .search-panel { padding: 15px; }
+
+      .search-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-grid .btn { width: 100%; }
+
+      .desktop-results { display: none; }
+      .mobile-results { display: block; }
+
+      .results-head {
+        align-items: flex-start;
+      }
+
+      .toolbar { width: 100%; }
+      .toolbar .btn { flex: 1 1 160px; }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-section.wide { grid-column: auto; }
+
+      .card-grid { grid-template-columns: 1fr; }
+
+      .help-row { display: block; }
+      .help-row > * + * { margin-top: 7px; }
+    }
+
+
+    .loading-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: .35; transform: scale(.8); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    .raw-json {
+      margin: 10px 0 0;
+      max-height: 360px;
+      overflow: auto;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font: 12px/1.5 Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    details summary {
+      cursor: pointer;
+      color: var(--primary-dark);
+      font-weight: 800;
+    }
+
+    @page {
+      size: A4 landscape;
+      margin: 9mm;
+    }
+
+    @media print {
+      html, body {
+        width: 100%;
+        background: white;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .page {
+        width: 100%;
+        max-width: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .hero p,
+      .demo-badge,
+      .search-panel,
+      .toolbar,
+      .pagination,
+      .footer-note,
+      .btn,
+      .state {
+        display: none !important;
+      }
+
+      .hero {
+        margin: 0 0 6mm;
+      }
+
+      .hero h1 {
+        font-size: 22px;
+        margin: 0;
+      }
+
+      .panel {
+        box-shadow: none;
+        border: 0;
+        border-radius: 0;
+      }
+
+      .results-head {
+        padding: 0 0 4mm;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .desktop-results { display: block !important; }
+      .mobile-results { display: none !important; }
+
+      .table-wrap {
+        overflow: visible;
+      }
+
+      table {
+        width: 100%;
+        min-width: 0;
+        table-layout: fixed;
+        font-size: 8px;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tr, td, th {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      thead th,
+      tbody td {
+        padding: 4px 5px;
+        overflow-wrap: anywhere;
+      }
+
+      thead th {
+        font-size: 7px;
+      }
+
+      .status {
+        font-size: 8px;
+        padding: 3px 5px;
+      }
+
+      .details-row.open {
+        display: table-row !important;
+      }
+
+      .details-card {
+        padding: 5mm 0 0;
+        border-left: 0;
+      }
+
+      .details-top {
+        margin-bottom: 4mm;
+      }
+
+      .details-top h3 {
+        font-size: 17px;
+      }
+
+      .detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 3mm;
+      }
+
+      .detail-section {
+        padding: 3mm;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .detail-section.wide {
+        grid-column: span 2;
+      }
+
+      .kv {
+        font-size: 9px;
+        gap: 4px 8px;
+      }
+
+      .list {
+        font-size: 9px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <h1>Поиск сведений о поверке</h1>
+        <p>Найдите реальные сведения ГИС «Аршин» по регистрационному номеру типа СИ и заводскому или серийному номеру.</p>
+      </div>
+      <div class="demo-badge" title="Сейчас используются примеры из документации">
+        ● Онлайн-подключение
+      </div>
+    </header>
+
+    <section class="panel search-panel" aria-labelledby="search-title">
+      <p class="section-label" id="search-title">Год поверки</p>
+      <div class="years-wrap">
+        <div class="years" id="years" role="group" aria-label="Выбор года"></div>
+      </div>
+
+      <form id="searchForm" novalidate>
+        <div class="search-grid">
+          <div class="field">
+            <label for="registryNumber">Регистрационный номер типа СИ</label>
+            <input
+              id="registryNumber"
+              name="registryNumber"
+              type="text"
+              autocomplete="off"
+              placeholder="Например, 33711-08"
+              value=""
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="serialNumber">Заводской / серийный номер</label>
+            <input
+              id="serialNumber"
+              name="serialNumber"
+              type="text"
+              autocomplete="off"
+              placeholder="Например, DS1EB131601970"
+              value=""
+              required
+            />
+          </div>
+
+          <button class="btn btn-primary" type="submit">⌕ Найти</button>
+          <button class="btn btn-secondary" type="button" id="clearBtn">× Очистить</button>
+        </div>
+
+        <div class="help-row">
+          <span>Оба поля обязательны. Поиск выполняется по точному совпадению.</span>
+          <span><strong>Пример для проверки:</strong> 2026 · 75675-19 · SDS2EDDQ7R0659</span>
+        </div>
+      </form>
+    </section>
+
+    <div id="message" class="state" role="status" aria-live="polite"></div>
+
+    <section class="panel results-panel" aria-labelledby="results-title">
+      <div class="results-head">
+        <div class="results-title">
+          <h2 id="results-title">Результаты</h2>
+          <span class="count" id="countText">Поиск ещё не выполнен</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="page-size">
+            <label for="pageSize">На странице</label>
+            <select id="pageSize">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-small" type="button" id="printBtn">Печать / PDF</button>
+          <button class="btn btn-ghost btn-small" type="button" id="csvBtn">Скачать CSV</button>
+        </div>
+      </div>
+
+      <div class="desktop-results">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Организация-поверитель</th>
+                <th>Рег. номер типа СИ</th>
+                <th>Наименование типа СИ</th>
+                <th>Обозначение / тип</th>
+                <th>Модификация</th>
+                <th>Серийный номер</th>
+                <th>Дата поверки</th>
+                <th>Действительна до</th>
+                <th>Документ</th>
+                <th>Пригодность</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td class="empty" colspan="11">Введите данные и нажмите «Найти».</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mobile-results" id="mobileResults">
+        <div class="empty">Введите данные и нажмите «Найти».</div>
+      </div>
+
+      <div class="pagination" id="pagination"></div>
+    </section>
+
+    <p class="footer-note">
+      Страница обращается к ГИС «Аршин» через серверный сервис.
+    </p>
+  </main>
+
+  <script>
+    const state = {
+      selectedYear: 2026,
+      results: [],
+      page: 1,
+      pageSize: 20,
+      openIds: new Set(),
+      detailsCache: new Map(),
+      loadingDetails: new Set()
+    };
+
+    const yearsEl = document.getElementById("years");
+    const form = document.getElementById("searchForm");
+    const registryInput = document.getElementById("registryNumber");
+    const serialInput = document.getElementById("serialNumber");
+    const clearBtn = document.getElementById("clearBtn");
+    const messageEl = document.getElementById("message");
+    const countText = document.getElementById("countText");
+    const tableBody = document.getElementById("tableBody");
+    const mobileResults = document.getElementById("mobileResults");
+    const pagination = document.getElementById("pagination");
+    const pageSizeSelect = document.getElementById("pageSize");
+    const printBtn = document.getElementById("printBtn");
+    const csvBtn = document.getElementById("csvBtn");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function displayValue(value) {
+      if (value === null || value === undefined || value === "") return "Нет данных";
+      if (value === true) return "Да";
+      if (value === false) return "Нет";
+      if (Array.isArray(value)) return value.length ? value.join(", ") : "Нет данных";
+      return String(value);
+    }
+
+    function formatDate(value) {
+      if (!value) return "Нет данных";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return new Intl.DateTimeFormat("ru-RU").format(date);
+    }
+
+    function cleanDate(value) {
+      if (!value) return null;
+      return String(value).slice(0, 10);
+    }
+
+    function showMessage(text, type = "info", loading = false) {
+      messageEl.innerHTML = `${loading ? '<span class="loading-dot"></span>' : ""}${escapeHtml(text)}`;
+      messageEl.className = `state show ${type}`;
+    }
+
+    function hideMessage() {
+      messageEl.className = "state";
+      messageEl.textContent = "";
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url, { headers: { "Accept": "application/json" } });
+      let payload;
+      try {
+        payload = await response.json();
+      } catch {
+        throw new Error(`Сервис вернул ответ в неожиданном формате (HTTP ${response.status}).`);
+      }
+
+      if (!response.ok || payload.ok === false) {
+        const extra = payload.details ? ` ${payload.details}` : "";
+        throw new Error((payload.error || `Ошибка HTTP ${response.status}.`) + extra);
+      }
+
+      return payload;
+    }
+
+    function renderYears() {
+      const years = [];
+      for (let year = 2026; year >= 2010; year -= 1) years.push(year);
+
+      yearsEl.innerHTML = years.map(year => `
+        <button
+          type="button"
+          class="year-btn ${state.selectedYear === year ? "active" : ""}"
+          data-year="${year}"
+          aria-pressed="${state.selectedYear === year}"
+        >${year}</button>
+      `).join("");
+
+      yearsEl.querySelectorAll(".year-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          state.selectedYear = Number(button.dataset.year);
+          state.page = 1;
+          renderYears();
+          hideMessage();
+        });
+      });
+    }
+
+    function mapListItem(item) {
+      return {
+        id: String(item.vri_id || ""),
+        year: state.selectedYear,
+        organization: item.org_title || "Нет данных",
+        registryNumber: item.mit_number || "Нет данных",
+        typeTitle: item.mit_title || "Нет данных",
+        typeNotation: item.mit_notation || "Нет данных",
+        modification: item.mi_modification || "Нет данных",
+        serialNumber: item.mi_number || "Нет данных",
+        verificationDate: cleanDate(item.verification_date),
+        validDate: cleanDate(item.valid_date),
+        documentNumber: item.result_docnum || "Нет данных",
+        applicable: item.applicability === true,
+        rawList: item
+      };
+    }
+
+    async function runSearch() {
+      hideMessage();
+
+      const registryNumber = registryInput.value.trim();
+      const serialNumber = serialInput.value.trim();
+
+      if (!registryNumber || !serialNumber) {
+        showMessage("Заполните оба поля: регистрационный номер и серийный номер.", "error");
+        return;
+      }
+
+      showMessage("Запрашиваем сведения в ГИС «Аршин»…", "info", true);
+
+      const params = new URLSearchParams({
+        year: String(state.selectedYear),
+        registry: registryNumber,
+        serial: serialNumber
+      });
+
+      try {
+        const payload = await fetchJson(`/api/search?${params.toString()}`);
+        state.results = (payload.items || [])
+          .map(mapListItem)
+          .sort((a, b) => new Date(b.verificationDate || 0) - new Date(a.verificationDate || 0));
+
+        state.page = 1;
+        state.openIds.clear();
+        state.detailsCache.clear();
+
+        if (state.results.length === 0) {
+          showMessage(
+            `За ${state.selectedYear} год точных совпадений не найдено. Проверьте оба номера и выбранный год.`,
+            "error"
+          );
+        } else {
+          showMessage(`Найдено записей: ${state.results.length}.`, "info");
+        }
+
+        renderResults();
+      } catch (error) {
+        state.results = [];
+        state.openIds.clear();
+        renderResults();
+        showMessage(error.message || "Не удалось выполнить поиск.", "error");
+      }
+    }
+
+    function getPagedResults() {
+      const start = (state.page - 1) * state.pageSize;
+      return state.results.slice(start, start + state.pageSize);
+    }
+
+    function renderStatus(item) {
+      return item.applicable
+        ? `<span class="status ok">✓ Пригодно</span>`
+        : `<span class="status bad">× Непригодно</span>`;
+    }
+
+    function pickInstrument(miInfo = {}) {
+      return miInfo.singleMI || miInfo.etaMI || miInfo.partyMI || {};
+    }
+
+    function verificationType(value) {
+      if (String(value) === "1") return "Первичная";
+      if (String(value) === "2") return "Периодическая";
+      return displayValue(value);
+    }
+
+    function kvRows(rows) {
+      const visible = rows.filter(([, value]) => value !== null && value !== undefined && value !== "");
+      if (!visible.length) return `<span class="muted">Нет данных</span>`;
+
+      return `<dl class="kv">${visible.map(([label, value, isDate]) => `
+        <dt>${escapeHtml(label)}</dt>
+        <dd>${escapeHtml(isDate ? formatDate(value) : displayValue(value))}</dd>
+      `).join("")}</dl>`;
+    }
+
+    function objectSummary(object) {
+      if (!object || typeof object !== "object") return displayValue(object);
+
+      const preferred = [
+        object.number,
+        object.regNumber,
+        object.mitypeNumber,
+        object.title,
+        object.mitypeTitle,
+        object.type,
+        object.manufactureNum,
+        object.metroChars
+      ].filter(Boolean);
+
+      if (preferred.length) return preferred.join(" — ");
+
+      return Object.entries(object)
+        .filter(([key, value]) => !/url$/i.test(key) && value !== null && value !== undefined && value !== "")
+        .map(([key, value]) => `${key}: ${displayValue(value)}`)
+        .join("; ") || "Нет данных";
+    }
+
+    function renderObjectList(items) {
+      if (!Array.isArray(items) || !items.length) return `<span class="muted">Нет данных</span>`;
+      return `<ul class="list">${items.map(item => `<li>${escapeHtml(objectSummary(item))}</li>`).join("")}</ul>`;
+    }
+
+    function detailsHtml(item) {
+      if (state.loadingDetails.has(item.id)) {
+        return `
+          <div class="details-card">
+            <div class="state show info"><span class="loading-dot"></span>Загружаем полную карточку…</div>
+          </div>
+        `;
+      }
+
+      const payload = state.detailsCache.get(item.id);
+      if (!payload) {
+        return `
+          <div class="details-card">
+            <div class="state show error">Полная карточка пока не загружена.</div>
+          </div>
+        `;
+      }
+
+      const result = payload?.data?.result || payload?.result || payload?.data || {};
+      const miInfo = result.miInfo || {};
+      const instrument = pickInstrument(miInfo);
+      const vri = result.vriInfo || {};
+      const applicable = vri.applicable || {};
+      const inapplicable = vri.inapplicable || {};
+      const means = result.means || {};
+      const info = result.info || {};
+
+      const resultText = vri.applicable
+        ? "Пригодно"
+        : vri.inapplicable
+          ? "Непригодно"
+          : (item.applicable ? "Пригодно" : "Непригодно");
+
+      return `
+        <div class="details-card">
+          <div class="details-top">
+            <div>
+              <h3>Полная карточка поверки</h3>
+              <div class="muted">${escapeHtml(item.registryNumber)} · ${escapeHtml(item.serialNumber)}</div>
+            </div>
+            <div class="detail-actions">
+              <button class="btn btn-ghost btn-small js-print-one" data-id="${escapeHtml(item.id)}" type="button">Печать / PDF</button>
+            </div>
+          </div>
+
+          <div class="detail-grid">
+            <section class="detail-section">
+              <h4>Средство измерений</h4>
+              ${kvRows([
+                ["Номер типа СИ", instrument.mitypeNumber || item.registryNumber],
+                ["Наименование", instrument.mitypeTitle || item.typeTitle],
+                ["Тип / обозначение", instrument.mitypeType || instrument.notation || item.typeNotation],
+                ["Модификация", instrument.modification || item.modification],
+                ["Серийный номер", instrument.manufactureNum || item.serialNumber],
+                ["Инвентарный номер", instrument.inventoryNum],
+                ["Год выпуска", instrument.manufactureYear],
+                ["Количество в партии", instrument.quantity],
+                ["Номер СИ в перечне", instrument.regNumber],
+                ["Поверочная схема", instrument.schemaTitle]
+              ])}
+            </section>
+
+            <section class="detail-section">
+              <h4>Сведения о поверке</h4>
+              ${kvRows([
+                ["Организация", vri.organization || item.organization],
+                ["Шифр знака", vri.signCipher],
+                ["Владелец", vri.miOwner],
+                ["Дата поверки", vri.vrfDate || item.verificationDate, true],
+                ["Действительна до", vri.validDate || item.validDate, true],
+                ["Тип поверки", verificationType(vri.vriType)],
+                ["Документ-основание", vri.docTitle],
+                ["Результат", resultText]
+              ])}
+            </section>
+
+            <section class="detail-section">
+              <h4>Документ</h4>
+              ${kvRows([
+                ["Номер свидетельства / выписки", applicable.certNum || item.documentNumber],
+                ["Номер извещения / выписки", inapplicable.noticeNum],
+                ["Номер наклейки", applicable.stickerNum],
+                ["Знак в паспорте", applicable.signPass],
+                ["Знак на СИ", applicable.signMi]
+              ])}
+            </section>
+
+            <section class="detail-section wide">
+              <h4>Средства поверки и эталоны</h4>
+              <div class="detail-grid">
+                <div><strong>Государственные первичные эталоны</strong>${renderObjectList(means.npe)}</div>
+                <div><strong>Эталоны единиц величин</strong>${renderObjectList(means.uve)}</div>
+                <div><strong>Стандартные образцы</strong>${renderObjectList(means.ses)}</div>
+                <div><strong>СИ в качестве эталонов</strong>${renderObjectList(means.mieta)}</div>
+                <div><strong>Средства измерений при поверке</strong>${renderObjectList(means.mis)}</div>
+                <div><strong>Вещества и материалы</strong>${renderObjectList(means.reagent)}</div>
+              </div>
+            </section>
+
+            <section class="detail-section">
+              <h4>Дополнительные сведения</h4>
+              ${kvRows([
+                ["Состав СИ", info.structure],
+                ["Сокращённая поверка", info.briefIndicator],
+                ["Объём поверки", info.briefCharacteristics],
+                ["Диапазоны", info.ranges],
+                ["Величины", info.values],
+                ["Каналы", info.channels],
+                ["Блоки", info.blocks],
+                ["Прочее", info.additional_info],
+                ["Дополнительный метод", means.oMethod]
+              ])}
+            </section>
+
+            <section class="detail-section wide">
+              <h4>Все данные API</h4>
+              <details>
+                <summary>Показать исходный ответ JSON</summary>
+                <pre class="raw-json">${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+              </details>
+            </section>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadDetails(item) {
+      if (state.detailsCache.has(item.id)) return;
+      if (!item.id) throw new Error("В записи отсутствует идентификатор vri_id.");
+      if (state.loadingDetails.has(item.id)) return;
+
+      state.loadingDetails.add(item.id);
+      renderResults();
+
+      try {
+        const params = new URLSearchParams({ vri_id: item.id });
+        const payload = await fetchJson(`/api/details?${params.toString()}`);
+        state.detailsCache.set(item.id, payload);
+      } finally {
+        state.loadingDetails.delete(item.id);
+      }
+    }
+
+    async function toggleDetails(item) {
+      if (state.openIds.has(item.id)) {
+        state.openIds.delete(item.id);
+        renderResults();
+        return;
+      }
+
+      state.openIds.add(item.id);
+      renderResults();
+
+      try {
+        await loadDetails(item);
+        renderResults();
+      } catch (error) {
+        state.openIds.delete(item.id);
+        renderResults();
+        showMessage(error.message || "Не удалось загрузить полную карточку.", "error");
+      }
+    }
+
+    function renderDesktop(items) {
+      if (!items.length) {
+        tableBody.innerHTML = `<tr><td class="empty" colspan="11">Ничего не найдено.</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = items.map(item => {
+        const isOpen = state.openIds.has(item.id);
+        return `
+          <tr class="row-main ${isOpen ? "is-open" : ""}">
+            <td>${escapeHtml(item.organization)}</td>
+            <td><strong>${escapeHtml(item.registryNumber)}</strong></td>
+            <td>${escapeHtml(item.typeTitle)}</td>
+            <td>${escapeHtml(item.typeNotation)}</td>
+            <td>${escapeHtml(item.modification)}</td>
+            <td><strong>${escapeHtml(item.serialNumber)}</strong></td>
+            <td>${formatDate(item.verificationDate)}</td>
+            <td>${formatDate(item.validDate)}</td>
+            <td>${escapeHtml(item.documentNumber)}</td>
+            <td>${renderStatus(item)}</td>
+            <td>
+              <button class="btn btn-ghost btn-small js-toggle" type="button" data-id="${escapeHtml(item.id)}">
+                ${isOpen ? "Скрыть" : "Подробнее"}
+              </button>
+            </td>
+          </tr>
+          <tr class="details-row ${isOpen ? "open" : ""}">
+            <td class="details-cell" colspan="11">${isOpen ? detailsHtml(item) : ""}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderMobile(items) {
+      if (!items.length) {
+        mobileResults.innerHTML = `<div class="empty">Ничего не найдено.</div>`;
+        return;
+      }
+
+      mobileResults.innerHTML = items.map(item => {
+        const isOpen = state.openIds.has(item.id);
+        return `
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h3 class="card-title">${escapeHtml(item.typeTitle)}</h3>
+                <div class="muted">${escapeHtml(item.registryNumber)}</div>
+              </div>
+              ${renderStatus(item)}
+            </div>
+
+            <div class="card-grid">
+              <div class="card-item"><span>Серийный номер</span><strong>${escapeHtml(item.serialNumber)}</strong></div>
+              <div class="card-item"><span>Организация</span><strong>${escapeHtml(item.organization)}</strong></div>
+              <div class="card-item"><span>Дата поверки</span><strong>${formatDate(item.verificationDate)}</strong></div>
+              <div class="card-item"><span>Действительна до</span><strong>${formatDate(item.validDate)}</strong></div>
+              <div class="card-item"><span>Документ</span><strong>${escapeHtml(item.documentNumber)}</strong></div>
+              <div class="card-item"><span>Модификация</span><strong>${escapeHtml(item.modification)}</strong></div>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn btn-primary btn-small js-toggle" type="button" data-id="${escapeHtml(item.id)}">
+                ${isOpen ? "Скрыть" : "Подробнее"}
+              </button>
+            </div>
+
+            <div class="mobile-detail ${isOpen ? "open" : ""}">
+              ${isOpen ? detailsHtml(item) : ""}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderPagination() {
+      const pageCount = Math.max(1, Math.ceil(state.results.length / state.pageSize));
+
+      if (state.results.length <= state.pageSize) {
+        pagination.innerHTML = "";
+        return;
+      }
+
+      const buttons = [];
+      buttons.push(`<button class="page-btn" data-page="${state.page - 1}" ${state.page === 1 ? "disabled" : ""}>‹</button>`);
+
+      for (let page = 1; page <= pageCount; page += 1) {
+        buttons.push(`
+          <button class="page-btn ${state.page === page ? "active" : ""}" data-page="${page}">
+            ${page}
+          </button>
+        `);
+      }
+
+      buttons.push(`<button class="page-btn" data-page="${state.page + 1}" ${state.page === pageCount ? "disabled" : ""}>›</button>`);
+      pagination.innerHTML = buttons.join("");
+
+      pagination.querySelectorAll("[data-page]").forEach(button => {
+        button.addEventListener("click", () => {
+          const nextPage = Number(button.dataset.page);
+          if (nextPage >= 1 && nextPage <= pageCount) {
+            state.page = nextPage;
+            renderResults();
+          }
+        });
+      });
+    }
+
+    function findItemById(id) {
+      return state.results.find(item => item.id === id);
+    }
+
+    function bindResultActions() {
+      document.querySelectorAll(".js-toggle").forEach(button => {
+        button.addEventListener("click", async () => {
+          const item = findItemById(button.dataset.id);
+          if (item) await toggleDetails(item);
+        });
+      });
+
+      document.querySelectorAll(".js-print-one").forEach(button => {
+        button.addEventListener("click", async () => {
+          const item = findItemById(button.dataset.id);
+          if (!item) return;
+
+          try {
+            await loadDetails(item);
+            state.openIds.add(item.id);
+            renderResults();
+            window.setTimeout(() => window.print(), 80);
+          } catch (error) {
+            showMessage(error.message || "Не удалось подготовить карточку к печати.", "error");
+          }
+        });
+      });
+    }
+
+    function renderResults() {
+      const items = getPagedResults();
+      const total = state.results.length;
+
+      countText.textContent = total
+        ? `Найдено: ${total}`
+        : "Нет результатов";
+
+      renderDesktop(items);
+      renderMobile(items);
+      renderPagination();
+      bindResultActions();
+    }
+
+    function downloadCsv() {
+      if (!state.results.length) {
+        showMessage("Сначала выполните поиск, чтобы скачать результаты.", "error");
+        return;
+      }
+
+      const headers = [
+        "Год",
+        "Организация-поверитель",
+        "Регистрационный номер типа СИ",
+        "Наименование типа СИ",
+        "Обозначение",
+        "Модификация",
+        "Серийный номер",
+        "Дата поверки",
+        "Действительна до",
+        "Документ",
+        "Пригодность",
+        "vri_id"
+      ];
+
+      const escapeCsv = value => `"${String(value ?? "").replaceAll('"', '""')}"`;
+
+      const rows = state.results.map(item => [
+        item.year,
+        item.organization,
+        item.registryNumber,
+        item.typeTitle,
+        item.typeNotation,
+        item.modification,
+        item.serialNumber,
+        formatDate(item.verificationDate),
+        formatDate(item.validDate),
+        item.documentNumber,
+        item.applicable ? "Пригодно" : "Непригодно",
+        item.id
+      ]);
+
+      const csv = "\uFEFF" + [headers, ...rows]
+        .map(row => row.map(escapeCsv).join(";"))
+        .join("\r\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `poverki-${state.selectedYear}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      runSearch();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      registryInput.value = "";
+      serialInput.value = "";
+      state.results = [];
+      state.openIds.clear();
+      state.detailsCache.clear();
+      hideMessage();
+      renderResults();
+      registryInput.focus();
+    });
+
+    pageSizeSelect.addEventListener("change", () => {
+      state.pageSize = Number(pageSizeSelect.value);
+      state.page = 1;
+      renderResults();
+    });
+
+    printBtn.addEventListener("click", async () => {
+      if (!state.results.length) {
+        showMessage("Сначала выполните поиск, чтобы подготовить печать.", "error");
+        return;
+      }
+
+      showMessage("Загружаем полные карточки для печати…", "info", true);
+
+      try {
+        const items = getPagedResults();
+        await Promise.all(items.map(loadDetails));
+        items.forEach(item => state.openIds.add(item.id));
+        hideMessage();
+        renderResults();
+        window.setTimeout(() => window.print(), 100);
+      } catch (error) {
+        showMessage(error.message || "Не удалось подготовить печать.", "error");
+      }
+    });
+
+    csvBtn.addEventListener("click", downloadCsv);
+
+    renderYears();
+    renderResults();
+  </script>
+</body>
+</html>
