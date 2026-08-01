@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Проверка прямого доступа к ГИС Аршин</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #10233f; }
+    .box { padding: 18px; border: 1px solid #cbd7e6; border-radius: 12px; background: #f7faff; }
+    .ok { color: #08783e; }
+    .err { color: #c62828; }
+    pre { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Проверка связи с ГИС «Аршин»</h1>
+  <div class="box">
+    <p id="status">Выполняю прямой запрос из браузера…</p>
+    <pre id="result"></pre>
+  </div>
+
+  <script>
+    const url = "https://fgis.gost.ru/fundmetrology/eapi/vri?year=2026&search=75675-19%20SDS2EDDQ7R0659&start=0&rows=1";
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    const started = performance.now();
+
+    fetch(url, {
+      method: "GET",
+      headers: { "Accept": "application/json" }
+    })
+      .then(async (response) => {
+        const elapsed = Math.round(performance.now() - started);
+        const text = await response.text();
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${text.slice(0, 500)}`);
+        }
+        statusEl.className = "ok";
+        statusEl.textContent = `Успех: браузер получил ответ ГИС «Аршин» за ${elapsed} мс.`;
+        resultEl.textContent = text.slice(0, 1200);
+      })
+      .catch((error) => {
+        const elapsed = Math.round(performance.now() - started);
+        statusEl.className = "err";
+        statusEl.textContent = `Ошибка прямого запроса через ${elapsed} мс.`;
+        resultEl.textContent = String(error);
+      });
+  </script>
+</body>
+</html>
