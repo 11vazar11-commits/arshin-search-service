@@ -100,12 +100,14 @@ class ArshinHandler(SimpleHTTPRequestHandler):
             )
             return
 
-        search_value = f"{registry} {serial}"
+        # Серийный номер обычно намного точнее регистрационного.
+        # Ищем сначала только по нему, а затем строго сверяем оба номера.
+        search_value = serial
         matched: list[dict[str, Any]] = []
         upstream_count = 0
         start = 0
         rows = 100
-        max_pages = 25
+        max_pages = 10
 
         try:
             for _ in range(max_pages):
@@ -129,6 +131,10 @@ class ArshinHandler(SimpleHTTPRequestHandler):
                         and normalized(item.get("mi_number")) == normalized(serial)
                     ):
                         matched.append(item)
+
+                # Совпадение найдено — дальше страницы просматривать не нужно.
+                if matched:
+                    break
 
                 if len(items) < rows:
                     break
